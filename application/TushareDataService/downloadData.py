@@ -6,6 +6,10 @@
 import sys, getopt
 from dataService import *
 
+defaultencoding = 'utf-8'
+if sys.getdefaultencoding() != defaultencoding:
+    reload(sys)
+    sys.setdefaultencoding(defaultencoding)
 
 def main(argv):
     try:
@@ -17,8 +21,8 @@ def main(argv):
         print '-d   get history data'
         print '-i   generate data index using talib'
         sys.exit(2)
-        
-    op = 0    
+
+    op = 0
     for opt, arg in opts:
         if opt == "-h":
             print 'arguments:'
@@ -27,9 +31,9 @@ def main(argv):
             print '-i   generate data index using talib'
         if opt == '-d':
             op = 1 + op
-        if opt == '-i': 
+        if opt == '-i':
             op = 10 + op
-            
+
     if op == 1:
         downloadBarData()
     elif op == 10:
@@ -37,15 +41,8 @@ def main(argv):
     else:
         downloadBarData()
         indexGeneratorAndStore()
-        
+
     print '完成处理'
-
-        
-
-
-
-
-
 
 if __name__ == '__main__':
     main(sys.argv[1:])

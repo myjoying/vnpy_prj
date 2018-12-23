@@ -124,7 +124,7 @@ def downloadBarData():
             try:
                 downBarBySymbol(str(symbol), start_date, end_date, freq)
             except:
-                print '首次下载失败：' + symbol + '--' + freq
+                print '首次下载失败：%s--%s' %( symbol,freq)
                 if symbol not in failure_dict.keys():
                     freq_list = []
                     freq_list.append(freq)
@@ -136,11 +136,11 @@ def downloadBarData():
     
     for symbol,freq_list in failure_dict.items():
         for freq in freq_list:
-            print '补充下载:' + symbol + '--' + freq
+            print '补充下载:%s--%s'%(symbol, freq)
             try:
                 downBarBySymbol(str(symbol), start_date, end_date, freq)
             except:
-                print '下载失败：' + symbol + '--' + freq
+                print '下载失败：%s--%s'%(symbol,freq)
                 
     print '-' * 50
     print u'合约K线数据下载完成'
