@@ -156,27 +156,28 @@ def indexGeneratorAndStore():
             collection = db[symbol]
             data =  pd.DataFrame(list(collection.find()))
             
-            data['SMA5'] = ta.SMA(data['close'].values, timeperiod = 5)  #5日均线
-            data['SMA10'] = ta.SMA(data['close'].values, timeperiod = 10)  #10日均线
-            macd_talib, signal, hist = ta.MACD(data['close'].values,fastperiod=12, slowperiod=26, signalperiod=9 )
-            data['DIF'] = macd_talib #DIF
-            data['DEA'] = signal #DEA
-            data['MACD'] = hist #MACD 
+            if not data.empty():
+                data['SMA5'] = ta.SMA(data['close'].values, timeperiod = 5)  #5日均线
+                data['SMA10'] = ta.SMA(data['close'].values, timeperiod = 10)  #10日均线
+                macd_talib, signal, hist = ta.MACD(data['close'].values,fastperiod=12, slowperiod=26, signalperiod=9 )
+                data['DIF'] = macd_talib #DIF
+                data['DEA'] = signal #DEA
+                data['MACD'] = hist #MACD 
+                
+                macd_talib2, signal2, hist2 = ta.MACD(data['close'].values,fastperiod=24, slowperiod=52, signalperiod=9 )
+                data['DIF2'] = macd_talib2 #DIF
+                data['DEA2'] = signal2 #DEA
+                data['MACD2'] = hist2 #MACD     
             
-            macd_talib2, signal2, hist2 = ta.MACD(data['close'].values,fastperiod=24, slowperiod=52, signalperiod=9 )
-            data['DIF2'] = macd_talib2 #DIF
-            data['DEA2'] = signal2 #DEA
-            data['MACD2'] = hist2 #MACD     
-            
-            for item in data.index:
-                collection.update_one({'_id':data.ix[item, '_id']}, {'$set':{'SMA5':data.ix[item, 'SMA5'],\
-                                                                             'SMA10':data.ix[item, 'SMA10'],\
-                                                                             'DIF':data.ix[item, 'DIF'],\
-                                                                             'DEA':data.ix[item, 'DEA'],\
-                                                                             'MACD':data.ix[item, 'MACD'],\
-                                                                             'DIF2':data.ix[item, 'DIF2'],\
-                                                                             'DEA2':data.ix[item, 'DEA2'],\
-                                                                             'MACD2':data.ix[item, 'MACD2']}})
+                for item in data.index:
+                    collection.update_one({'_id':data.ix[item, '_id']}, {'$set':{'SMA5':data.ix[item, 'SMA5'],\
+                                                                                 'SMA10':data.ix[item, 'SMA10'],\
+                                                                                 'DIF':data.ix[item, 'DIF'],\
+                                                                                 'DEA':data.ix[item, 'DEA'],\
+                                                                                 'MACD':data.ix[item, 'MACD'],\
+                                                                                 'DIF2':data.ix[item, 'DIF2'],\
+                                                                                 'DEA2':data.ix[item, 'DEA2'],\
+                                                                                 'MACD2':data.ix[item, 'MACD2']}})
 
 
     
