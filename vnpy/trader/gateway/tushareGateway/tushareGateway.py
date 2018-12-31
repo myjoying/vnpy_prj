@@ -206,13 +206,13 @@ class TushareGateway(VtGateway):
             df = ts.get_realtime_quotes(req.symbol)
             
             if not df.empty:
-                print("有数据%s"%req.symbol)
                 tick = VtTickData()
                 
                 for key in tick_tushare_map.keys():
                     tick.__dict__[key] = df.ix[0, tick_tushare_map[key]]
                 
                 tick.datetime = datetime.strptime(df.ix[0, 'date']+ ' ' + df.ix[0, 'time'], "%Y-%m-%d %H:%M:%S")
+                print("数据%s -- %s"%(req.symbol, tick.datetime))
                 
                 self.onTick(tick)
         

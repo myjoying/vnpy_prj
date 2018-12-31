@@ -16,6 +16,7 @@ EVENT_BAR = 'eBar'                      # BAR行情事件，可后接具体的vt
 EVENT_BAR_5 = 'eFiveBar'                # 5min BAR行情事件，可后接具体的vtSymbol
 EVENT_BAR_30 = 'eThirtyBar'             # 30min BAR行情事件，可后接具体的vtSymbol
 EVENT_BAR_D= 'eDailyBar'                # Daily BAR行情事件，可后接具体的vtSymbol
+EVENT_INDEX='eIndex'                    # 计算指标事件
 EVENT_TRADE = 'eTrade.'                 # 成交回报事件
 EVENT_ORDER = 'eOrder.'                 # 报单回报事件
 EVENT_POSITION = 'ePosition.'           # 持仓回报事件

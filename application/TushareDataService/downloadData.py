@@ -42,7 +42,9 @@ def main(argv):
         downloadBarData()
         indexGeneratorAndStore()
 
+
     print '完成处理'
+
 
 if __name__ == '__main__':
     main(sys.argv[1:])

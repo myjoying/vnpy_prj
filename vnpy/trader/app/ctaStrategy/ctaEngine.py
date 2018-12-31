@@ -37,6 +37,9 @@ class CtaEngine(object):
     
     TICK_MODE = 'tick'
     BAR_MODE = 'bar'   
+    
+    RUN_REALTIME_MODE = 'realtime'
+    RUN_BACKTESTING_MODE = 'backtesting'
 
     #----------------------------------------------------------------------
     def __init__(self, mainEngine, eventEngine):
@@ -83,15 +86,25 @@ class CtaEngine(object):
         self.dataStartDate = None       # 回测数据开始日期，datetime对象
         self.dataEndDate = None         # 回测数据结束日期，datetime对象
         self.strategyStartDate = None   # 策略启动日期（即前面的数据用于初始化），datetime对象  
-        self.initDays = 10
+        self.initDays = 0
         self.mode = self.BAR_MODE
         self.basedbName = MINUTE_5_DB_NAME
+        
+        self.runmode = self.RUN_REALTIME_MODE
         
         # 注册日式事件类型
         self.mainEngine.registerLogEvent(EVENT_CTA_LOG)
         
         # 注册事件监听
         self.registerEvent()
+ 
+    #----------------------------------------------------------------------
+    def setBackTestingMode(self):
+        self.runmode = self.RUN_BACKTESTING_MODE
+ 
+    #----------------------------------------------------------------------
+    def setRealtimeMode(self):
+        self.runmode = self.RUN_REALTIME_MODE 
  
     #----------------------------------------------------------------------
     def sendOrder(self, vtSymbol, orderType, price, volume, strategy):
@@ -430,7 +443,7 @@ class CtaEngine(object):
             self.writeCtaLog(u'策略实例重名：%s' %name)
         else:
             # 创建策略实例
-            strategy = strategyClass(self, setting)  
+            strategy = strategyClass(self, setting, self.last_trading_day)  
             self.strategyDict[name] = strategy
             
             # 创建委托号列表
@@ -566,8 +579,9 @@ class CtaEngine(object):
         """读取策略配置"""
         with open(self.settingfilePath) as f:
             l = json.load(f)
-            
-            for setting in l:
+            self.last_trading_day = datetime.strptime(l['last_trading_day'], '%Y%m%d')
+            settings = l['strategy_list']
+            for setting in settings:
                 self.loadStrategy(setting)
     
     #----------------------------------------------------------------------

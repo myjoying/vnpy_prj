@@ -16,6 +16,10 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
+
+import shelve 
+import time
+    
 from vnpy.trader.app.ctaStrategy.ctaBase import *
 from vnpy.trader.vtObject import VtBarData
 from vnpy.trader.app.ctaStrategy.ctaTemplate import (CtaTemplate, 
@@ -109,9 +113,12 @@ class CtArrayManager(ArrayManager):
         self.timeArray = [datetime(2000, 1, 1) for i in range(size)]
         
     def updateBarAndTime(self, bar, time):
+        if time<=self.timeArray[-1]:
+            return 0
         self.updateBar(bar)
         self.timeArray[0:self.size-1] = self.timeArray[1:self.size]
         self.timeArray[-1] = time  
+        return 1
         
     def time(self):
         return self.timeArray
@@ -228,6 +235,24 @@ class CentralBaseSet:
         self.step_pos = 100
         self.total_pos = 0
         self.control_price = 0   #控制价格
+        
+    #------------------------------------------------------------------------
+    def __getstate__(self):
+        
+        attrs = ["freq","isTop","am","node_list","centralbase_list","beichi_list","share_beichi_list",
+         "beichi_pz_list","share_beichi_pz_list","seek_max","low_CB_set","up_CB_set","nodedbName","cbdbName","bcdbName",
+         "dbSymbol","cur_cut_low_id","cur_cut_start_node_id","cur_min_value","cur_min_node_id","cur_max_value","cur_max_node_id",
+         "share_bc_count","share_bc_flag","bottom_bc_is_ongoing","bc_start_node_id","bc_cur_max_value","bc_cur_max_node_id","share_bottom_bc_is_ongoing",
+         "share_top_bc_is_ongoing","buy_already_flag","step_pos","total_pos","control_price"]
+
+        return dict((attr, getattr(self, attr)) for attr in attrs)
+        
+    
+    def __setstate__(self, state):
+        for name, value in state.items():
+            setattr(self, name, value)
+    
+
         
     #------------------------------------------------------------------------
     def setDBInfo(self, nodedbName, cbdbName, dbSymbol):
@@ -1532,11 +1557,14 @@ class CtStrategy(CtaTemplate):
     syncList = ['pos']
 
     #----------------------------------------------------------------------
-    def __init__(self, ctaEngine, setting):
+    def __init__(self, ctaEngine, setting, last_trading_day=None):
         """Constructor"""
         super(CtStrategy, self).__init__(ctaEngine, setting)
         
         self.bg = BarGenerator(self.onBar, 5, self.onFiveBar)     # 创建K线合成器对象
+        
+        #最近交易日期
+        self.last_trading_day = last_trading_day
         
         #最近的交易单号
         self.last_buy_orderid = None
@@ -1556,45 +1584,50 @@ class CtStrategy(CtaTemplate):
     #----------------------------------------------------------------------
     def onInit(self):
         """初始化策略（必须由用户继承实现）"""
-        self.writeCtaLog(u'%s策略初始化' %self.name)
+  
+        self.writeCtaLog(u'策略初始化')
         
+        currentTime = dt.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)  
         
-        file_name = self.vtSymbol+'_'+'5MIN'+'.pickle'
+        self.writeCtaLog(u'上个交易日:'+str(self.last_trading_day))
+        self.writeCtaLog(u'当前日期:'+str(currentTime))
+        
+        self.writeCtaLog(u'初始化5MIN数据')
+        d = shelve.open('dbshelve\history_5min\\' + self.vtSymbol)
         try:
-            pickle_file = open(file_name, 'rb')
+            self.central_base5 = d[str(self.last_trading_day)]
+            self.central_base5.strategy = self
+            self.central_base5.engine = self.ctaEngine
         except:
-            pickle_file = None
-        if pickle_file != None:
-            self.writeCtaLog(u'%s读取5MIN数据' %self.name)
-            self.central_base5 = pickle.load(pickle_file)
-        else:
-            self.writeCtaLog(u'%s新建5MIN数据' %self.name)
             self.central_base5 = CentralBaseSet('5MIN', self)
-            
-        file_name = self.vtSymbol+'_'+'30MIN'+'.pickle'
+        finally:
+            d.close()
+        
+        
+        self.writeCtaLog(u'初始化30MIN数据')
+        d = shelve.open('dbshelve\history_30min\\' + self.vtSymbol)
         try:
-            pickle_file = open(file_name, 'rb')
+            self.central_base30 = d[str(self.last_trading_day)]
+            self.central_base30.strategy = self
+            self.central_base30.engine = self.ctaEngine            
         except:
-            pickle_file = None
-        if pickle_file != None:
-            self.writeCtaLog(u'%s读取30MIN数据' %self.name)
-            self.central_base30 = pickle.load(pickle_file)
-        else:
-            self.writeCtaLog(u'%s新建30MIN数据' %self.name)
             self.central_base30 = CentralBaseSet('30MIN', self)
+        finally:
+            d.close()        
 
-            
-        file_name = self.vtSymbol+'_'+'D'+'.pickle'
+        
+        self.writeCtaLog(u'初始化Daily数据')  
+        d = shelve.open('dbshelve\history_d\\' + self.vtSymbol)
         try:
-            pickle_file = open(file_name, 'rb')
+            self.central_baseD = d[str(self.last_trading_day)]
+            self.central_baseD.strategy = self
+            self.central_baseD.engine = self.ctaEngine                
         except:
-            pickle_file = None
-        if pickle_file != None:
-            self.writeCtaLog(u'%s读取D数据' %self.name)
-            self.central_baseD = pickle.load(pickle_file)
-        else:
-            self.writeCtaLog(u'%s新建D数据' %self.name)
-            self.central_baseD = CentralBaseSet('D',self, isTop=True)           
+            self.central_baseD = CentralBaseSet('D', self)
+        finally:
+            d.close()         
+ 
+            
             
         self.central_base5.setupperCBset(self.central_base30)
         self.central_base30.setlowerCBset(self.central_base5)
@@ -1618,33 +1651,27 @@ class CtStrategy(CtaTemplate):
     #----------------------------------------------------------------------
     def onStop(self):
         """停止策略（必须由用户继承实现）"""
-        self.writeCtaLog(u'%s策略停止' %self.name)
-        self.writeCtaLog(u'%保存5MIN数据' %self.name)
-        file_name = self.vtSymbol+'_'+'5MIN'+'.pickle'
-        try:
-            pickle_file = open(file_name, 'wb')
-        except:
-            pickle_file = None
-        if pickle_file != None:
-            pickle.dump(self.central_base5, pickle_file)
+        self.writeCtaLog(u'策略停止')
+        self.writeCtaLog(u'保存5MIN数据')
+
+        if self.ctaEngine.runmode == self.ctaEngine.RUN_REALTIME_MODE:
+            recordTime = dt.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)  
+        else:
+            recordTime = self.ctaEngine.dataEndDate
         
-        self.writeCtaLog(u'%保存30MIN数据' %self.name)
-        file_name = self.vtSymbol+'_'+'30MIN'+'.pickle'
-        try:
-            pickle_file = open(file_name, 'wb')
-        except:
-            pickle_file = None
-        if pickle_file != None:
-            pickle.dump(self.central_base30, pickle_file)
-            
-        self.writeCtaLog(u'%保存D数据' %self.name)
-        file_name = self.vtSymbol+'_D'+''+'.pickle'
-        try:
-            pickle_file = open(file_name, 'wb')
-        except:
-            pickle_file = None
-        if pickle_file != None:
-            pickle.dump(self.central_baseD, pickle_file)
+        d = shelve.open('dbshelve\history_5min\\' + self.vtSymbol)
+        d[str(recordTime)] = self.central_base5
+        d.close()
+        
+        self.writeCtaLog(u'保存30MIN数据')   
+        d = shelve.open('dbshelve\history_30min\\' + self.vtSymbol )
+        d[str(recordTime)] = self.central_base30
+        d.close()        
+        
+        self.writeCtaLog(u'保存Daily数据')  
+        d = shelve.open('dbshelve\history_d\\' + self.vtSymbol)
+        d[str(recordTime)] = self.central_base30
+        d.close()   
         
         self.putEvent()
 
@@ -1685,8 +1712,9 @@ class CtStrategy(CtaTemplate):
             if bar.close <=  self.central_baseD.control_price:
                 self.central_baseD.init_low_beichi_trend()
             
-        self.central_base5.am.updateBarAndTime(bar, bar.datetime)
-        self.central_base5.getNodeList_KLine_Step()
+        flag = self.central_base5.am.updateBarAndTime(bar, bar.datetime)
+        if flag>0:
+            self.central_base5.getNodeList_KLine_Step()
 
     #----------------------------------------------------------------------
 

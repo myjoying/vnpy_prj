@@ -355,7 +355,7 @@ class BarGenerator(object):
         
         self.xminBar_dict = {}      #X分钟处理对象所需要的字典（X分钟K线对象，X的值，X分钟K线的回调函数 ）
         if xmin > 0:
-            self.xminBar_dict[str(xmin)] = (None, xmin, onXminBar)
+            self.xminBar_dict[str(xmin)] = {'bar':None, 'freq':xmin, 'func':onXminBar}
 
         
         self.lastTick = None        # 上一TICK缓存对象
@@ -363,7 +363,7 @@ class BarGenerator(object):
     #----------------------------------------------------------------------
     def addXminBarGenerator(self, xmin, onXminBar):
         if xmin > 0:
-            self.xminBar_dict[str(xmin)] = (None, xmin, onXminBar)        
+            self.xminBar_dict[str(xmin)] = {'bar':None, 'freq':xmin, 'func':onXminBar}       
         
     #----------------------------------------------------------------------
     def updateTick(self, tick):
@@ -383,6 +383,7 @@ class BarGenerator(object):
             
             # 推送已经结束的上一分钟K线
             self.onBar(self.bar)
+            self.updateBar(self.bar)
             
             # 创建新的K线对象
             self.bar = VtBarData()
@@ -417,12 +418,12 @@ class BarGenerator(object):
     def updateBar(self, bar):
         """1分钟K线更新"""
         for xminkey in self.xminBar_dict.keys():
-            xminBar = self.xminBar_dict[xminkey][0]    # X分钟K线对象
-            xmin = self.xminBar_dict[xminkey][1]       # X的值
-            onXminBar = self.xminBar_dict[xminkey][2]  # X分钟K线的回调函数
+            xminBar = self.xminBar_dict[xminkey]['bar']    # X分钟K线对象
+            xmin = self.xminBar_dict[xminkey]['freq']       # X的值
+            onXminBar = self.xminBar_dict[xminkey]['func']  # X分钟K线的回调函数
             
             # 尚未创建对象
-            if not self.xminBar:
+            if not xminBar:
                 xminBar = VtBarData()
                 
                 xminBar.vtSymbol = bar.vtSymbol
@@ -447,9 +448,16 @@ class BarGenerator(object):
             # X分钟已经走完
             if not (bar.datetime.minute + 1) % xmin:   # 可以用X整除
                 # 生成上一X分钟K线的时间戳
-                xminBar.datetime = xminBar.datetime.replace(second=0, microsecond=0)  # 将秒和微秒设为0
-                xminBar.date = xminBar.datetime.strftime('%Y%m%d')
-                xminBar.time = xminBar.datetime.strftime('%H:%M:%S.%f')
+                new_minute = bar.datetime.minute + 1
+                new_hour =  bar.datetime.hour
+                if new_minute>=60:
+                    new_minute = 0
+                    new_hour = new_hour + 1
+    
+                bar.datetime = bar.datetime.replace(hour = new_hour, minute=new_minute, second=0, microsecond=0)  # 将秒和微秒设为0
+                xminBar.datetime = bar.datetime
+                xminBar.date = bar.datetime.strftime('%Y%m%d')
+                xminBar.time = bar.datetime.strftime('%H:%M:%S.%f')
                 
                 # 推送
                 onXminBar(xminBar)
@@ -457,7 +465,7 @@ class BarGenerator(object):
                 # 清空老K线缓存对象
                 xminBar = None            
             
-            self.xminBar_dict[xminkey][0] = xminBar
+            self.xminBar_dict[xminkey]['bar'] = xminBar
             
         '''
         # 尚未创建对象

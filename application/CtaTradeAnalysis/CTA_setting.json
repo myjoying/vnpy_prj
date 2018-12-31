@@ -1,18 +1,21 @@
-[
-    {
-        "name": "CT_002230",
-        "className": "CtStrategy",
-        "vtSymbol": "002230",
-        "start" : "20170809",
-        "end" : "20180809"
-    },
+{
+    "last_trading_day": "20171209",
+    "strategy_list":
+    [
+        {
+            "name": "CT_002230",
+            "className": "CtStrategy",
+            "vtSymbol": "002230",
+            "start" : "20170809",
+            "end" : "20171209"
+        },
+        {
+            "name": "CT_300467",
+            "className": "CtStrategy",
+            "vtSymbol": "300467",
+            "start" : "20170809",
+            "end" : "20171209"
+        }
+    ]
+}
 
-    {
-        "name": "CT_300467",
-        "className": "CtStrategy",
-        "vtSymbol": "300467",
-        "start" : "20170809",
-        "end" : "20180809"
-    }
-
-]

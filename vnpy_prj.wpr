@@ -51,3 +51,7 @@ proj.directory-list = [{'dirloc': loc('.'),
                         'recursive': True,
                         'watch_for_changes': True}]
 proj.file-type = 'shared'
+proj.launch-config = {loc('application/TushareDataService/downloadData.py'): ('p'\
+        'roject',
+        (u'-h -d -i',
+         ''))}

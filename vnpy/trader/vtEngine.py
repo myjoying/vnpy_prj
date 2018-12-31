@@ -221,19 +221,19 @@ class MainEngine(object):
             
             """ 插入数据后触发数据插入事件 """
             if dbName == MINUTE_DB_NAME:
-                event = Event(type = EVENT_BAR+collectionName)
+                event = Event(type_ = EVENT_BAR+collectionName)
                 event.dict_['data'] = d
                 self.eventEngine.put(event)
             elif dbName == MINUTE_5_DB_NAME:
-                event = Event(type = EVENT_BAR_5+collectionName)
+                event = Event(type_ = EVENT_BAR_5+collectionName)
                 event.dict_['data'] = d
                 self.eventEngine.put(event)
             elif dbName == MINUTE_30_DB_NAME:
-                event = Event(type = EVENT_BAR_30+collectionName)
+                event = Event(type_ = EVENT_BAR_30+collectionName)
                 event.dict_['data'] = d
                 self.eventEngine.put(event)   
             elif dbName == DAILY_DB_NAME:
-                event = Event(type = EVENT_BAR_D+collectionName)
+                event = Event(type_ = EVENT_BAR_D+collectionName)
                 event.dict_['data'] = d
                 self.eventEngine.put(event)             
         else:
@@ -267,6 +267,7 @@ class MainEngine(object):
             db = self.dbClient[dbName]
             collection = db[collectionName]
             collection.replace_one(flt, d, upsert)
+            #collection.update_one(flt, d, upsert)
         else:
             self.writeLog(text.DATA_UPDATE_FAILED) 
             
