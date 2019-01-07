@@ -764,7 +764,7 @@ class CtaEngine(object):
                 data.__dict__ = d
                 count = count + 1
                 if(count % 100 == 0):
-                    print u"data items = %d\r"%(count), 
+                    print( u"data items = %d\r"%(count),) 
                 strategy.onFiveBar(data)     
                 
             self.writeCtaLog(u'数据回放结束')

@@ -1,7 +1,7 @@
 # encoding: UTF-8
 
 from vnpy.trader import vtConstant
-from tushareGateway import TushareGateway
+from .tushareGateway import TushareGateway
 
 gatewayClass = TushareGateway
 gatewayName = 'Tushare'

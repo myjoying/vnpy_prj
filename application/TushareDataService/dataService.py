@@ -152,11 +152,11 @@ def indexGeneratorAndStore():
         for freq in FREQS:
             print u'开始指标计算合约%s 周期%s' %(symbol, freq)
             
-            db = mc[DB_NAME_DICT[freq]]
-            collection = db[symbol]
-            data =  pd.DataFrame(list(collection.find()))
-            
-            if not data.empty():
+            try:
+                db = mc[DB_NAME_DICT[freq]]
+                collection = db[symbol]
+                data =  pd.DataFrame(list(collection.find()))
+
                 data['SMA5'] = ta.SMA(data['close'].values, timeperiod = 5)  #5日均线
                 data['SMA10'] = ta.SMA(data['close'].values, timeperiod = 10)  #10日均线
                 macd_talib, signal, hist = ta.MACD(data['close'].values,fastperiod=12, slowperiod=26, signalperiod=9 )
@@ -178,6 +178,9 @@ def indexGeneratorAndStore():
                                                                                  'DIF2':data.ix[item, 'DIF2'],\
                                                                                  'DEA2':data.ix[item, 'DEA2'],\
                                                                                  'MACD2':data.ix[item, 'MACD2']}})
+            except Exception as e:
+                print repr(e)
+                print u'%s计算%s失败。'%(symbol,freq)
 
 
     
